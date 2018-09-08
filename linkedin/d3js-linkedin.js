@@ -130,3 +130,7 @@ function visualizeConnections(data, enableConnectionsToSelf, colorization) {
         });
     }   */
 }
+
+module.exports = {
+  visualizeConnections
+};

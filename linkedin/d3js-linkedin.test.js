@@ -1,3 +1,5 @@
-test('test exists', () => {
-  expect(1).toBe(1);
+const { visualizeConnections } = require('./d3js-linkedin');
+
+test('`visualizeConnections` is a function', () => {
+  expect(typeof visualizeConnections).toBe('function');
 });
