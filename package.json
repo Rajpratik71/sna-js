@@ -5,5 +5,8 @@
   "repository": "git@github.com:craigtutterow/sna-js.git",
   "author": "Craig Tutterow",
   "license": "MIT",
-  "private": true
+  "private": true,
+  "devDependencies": {
+    "jest": "^23.5.0"
+  }
 }
