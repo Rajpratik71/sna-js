@@ -13,7 +13,7 @@
     "jest": "^23.5.0"
   },
   "scripts": {
-    "lint": "eslint linkedin/** --fix",
+    "lint": "eslint src/** --fix",
     "test": "jest"
   }
 }
