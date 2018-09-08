@@ -1,0 +1,740 @@
+<html>
+<head>
+    <meta http-equiv="content-type" content="text-html; charset=utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Socilab is a free tool that allows users to visualize and analyze their LinkedIn network. It works with the LinkedIn API to a) calculate structural hole metrics such as network density, hierarchy and constraint - and displays your percentile compared to other users of the tool, and b) display a dynamic/interactive visualization of your ego network with node coloring by industry and an option to enable/disable connections to self using D3.js. Users might find it useful for class tutorials. Former users of the now deprecated LinkedIn inMaps may find this to be a useful alternative.">
+    <meta name="keywords" content="social network analysis, linkedin, social network visualization, socilab, craig tutterow, network analysis tutorial, social network analysis tutorial, social network education, social network tutorial, open source, web app, linkedin inmaps, inmaps, inmaps alternative, inmaps replacement, linkedin inmaps replacement, linkedin inmaps alternative, linkedin network, linkedin social network, social network linkedin, my linkedin network, explore linkedin network, linkedin network messaging, social network analysis software, linkedin connections, linkedin api, professional networking, social network metrics, social capital, javascript, node js, d3js, d3, dynamic, interactive, sna, network, visualization, analysis, education, professional,  social network data, odexl linkedin, nodexl, linkedin network study, linkedin network data, linkedin network tool, github, structural holes, betweenness centrality, betweenness, embeddedness, network density, network hierarchy, network constraint, constraint, hierarchy, density, effective size, sociomatrix, pajek, pajek edgelist, edgelist, edge list, pajek .net file, adjacency matrix, edgelist, percentiles, network metrics, social network structure, ucinet, igraph, sna, sociomatrix">
+    <meta name="author" content="Craig Tutterow">
+    <meta name="msvalidate.01" content="C0FB7796CFBAD03916CDC1F98A3F2020" />
+
+    <!--For the linkedin connector-->
+    <meta name="user-name" content="no-name" />
+    <meta name="user-id" content="no-id" />
+    <meta name="user-headline" content="no-headline" />
+    <title>Socilab - LinkedIn Social Network Visualization, Analysis, and Education</title>
+
+    <link type="text/css" rel="stylesheet" href="/css/bootstrap.min.css"/>
+    <link type="text/css" rel="stylesheet" href="/css/adminDash.css"/>
+    <script src="https://code.jquery.com/jquery-1.9.1.min.js"></script>
+    <script type="text/javascript" src="/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="/js/async.min.js"></script>
+    <script src="./js/jquery.cookie.js"></script>
+    <script type="text/javascript" src="./js/bootstrap-carousel.js">$(function() {
+    $('#myCarousel').carousel();
+    });</script>
+    <script type="text/javascript">
+      $(function() {
+        var COOKIE_NAME = 'splash-page-cookie';
+        $go = $.cookie(COOKIE_NAME);
+        if ($go == null) {
+          $.cookie(COOKIE_NAME, 'test', { path: '/', expires: 7 });
+          $("#carousel").show();
+        }
+        else {
+        }
+      });
+    </script>
+    <style>
+        hr {
+            margin: 20px 0;
+            border: 0;
+            border-top: 1px solid #bbb;
+            border-bottom: 1px solid #fff;
+        }
+        #header { position: relative; }
+        #header-content {position: absolute; bottom: 15px; left: 270px; }
+        #ad-content{position:absolute; right: 15px;}
+        body {
+            color: black;
+            font-size: 14px;
+        }
+
+        .node {
+            stroke: #fff;
+            stroke-width: 1.5px;
+        }
+
+        .node:hover {
+            fill: #00CCFF !important;
+        }
+
+        .link {
+            stroke: #999;
+            stroke-opacity: .6;
+        }
+
+        div.tooltip {
+          position: absolute;
+          text-align: center;
+          width: 400px;
+          height: 28px;
+          padding: 2px;
+          font: 12px sans-serif;
+          background: #00CCFF;
+          border: 0px;
+          border-radius: 8px;
+          pointer-events: none;
+        }
+
+        .message-bar {
+            height: 100px;
+            width: 100%;
+            bottom:0;
+            left:0;
+            right:0;
+            position: fixed;
+            border-top: 3px solid #ccc;
+            display: none;
+            overflow-y: scroll;
+            background: #fff;
+            resize:vertical;
+            z-index: 1;
+        }
+        #msgbar-close {
+            display: block;
+            position: fixed;
+            font-size: 1.4em;
+            width: 24px;
+            height: 24px;
+            line-height: 24px;
+            right: 8px;
+            background: white;
+            color: #333;
+            text-align: center;
+            text-decoration: none;
+        }
+
+        #msgbar-close:hover {
+            background: #bbb;
+        }
+
+        svg {
+            border: 1px solid #dddddd;
+            background: white;
+            width: 100%;
+        }
+        .loader_flush, .loader_content{
+            position: fixed;
+            height: 100%;
+            width:100%;
+            top:0;
+            left: 0;
+            margin: 0;
+            border: 0;
+            padding: 0;
+        }
+        .loader_flush{
+            z-index: 1000;
+            opacity: 0.4;
+            background: #000000;
+        }
+        .loader_content{
+            z-index: 1100;
+        }
+        .tabcontent{
+            clear: both;
+            overflow: hidden;
+        }
+        div.tabcontent section:not(:target) {display: none}
+        div.tabcontent section:target {display: block}
+        #hor-zebra
+        {
+            font-size: 14px;
+            margin: 20px;
+            text-align: left;
+            border-collapse: collapse;
+            border: 1px solid gray;
+        }
+        #hor-zebra th
+        {
+            text-align: center;
+            padding: 10px 8px;
+            background: #A0A0A0;
+            border-collapse: collapse;
+            border: 1px solid gray;
+        }
+        #hor-zebra td
+        {
+            padding: 8px;
+            font-size: 14px;
+            border-collapse: collapse;
+            border: 1px solid gray;
+            color: #000;
+        }
+        #hor-zebra td:hover
+        {
+            background: #00CCFF;
+        }
+        #hor-zebra a
+        {
+            color: #000;
+            font-weight: 600;
+        }
+        #hor-zebra a:hover
+        {
+            color: #fff;
+        }
+        #msgtable > td, tr {
+           border: 1px solid gray;
+        }
+        .carousel-inner > .item > img {
+            margin: 0 auto;
+        }
+    </style>
+    <script src="https://platform.linkedin.com/in.js" type="text/javascript" charset="utf-8">
+        api_key: 1rix8utsnlwk
+        authorize: true;
+        scope: r_fullprofile r_emailaddress r_network w_messages
+        credentials_cookie: true
+        credentials_cookie_crc: true
+        onLoad: onLinkedInLoad
+        lang:  en_US
+    </script>
+    <script src="/tool_files/d3.v3.js" charset="utf-8"></script>
+    <script src="/tool_files/graph.js" charset="utf-8"></script>
+    <script type="text/javascript" src="/tool_files/socilab-linkedin.js" charset="utf-8"></script>
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-2843997-10', 'socilab.com');
+  ga('send', 'pageview');
+</script>
+<link rel="shortcut icon" href="/img/favicon2.ico" type="image/x-icon">
+<link rel="icon" href="/img/favicon2.ico" type="image/x-icon">
+</head>
+<body>
+<div class="navbar navbar-inverse navbar-fixed-top">
+    <div class="navbar-inner">
+        <div class="container-fluid">
+            <div id="header">
+                <a class="brand" href="#home" style="color:white"><h1><font color="00CCFF"><img src="../img/soci-hz-white.png"></font></h1></a></div>
+                <!--<img src="/images/logo.gif" style="height: 65px" alt="Socilab"/>-->
+                <div id="header-content">
+                <a class="brand" href="#about">&nbsp;&nbsp;About</a>
+                <a class="brand" href="#resources">Resources</a>
+                <a class="brand" href="#books">Books</a>
+                </div>
+                <div id="ad-content">
+                     <style>
+                    .resp-roboto { width: 320px; height: 50px; }
+                    @media(min-width: 768px) { .resp-roboto { width: 468px; height: 60px; } }
+                    </style>
+                    <script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+                    <!-- resp-roboto -->
+                    <ins class="adsbygoogle resp-roboto"
+                         style="display:inline-block"
+                         data-ad-client="ca-pub-5190112921202137"
+                         data-ad-slot="9302527003"></ins>
+                    <script>
+                    (adsbygoogle = window.adsbygoogle || []).push({});
+                    </script>
+                </div>
+                 <!--    <script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+                    <ins class="adsbygoogle responsive-1"
+                         style="display:inline-block"
+                         data-ad-client="ca-pub-5190112921202137"
+                         data-ad-slot="2830628206"></ins>
+                    <script>
+                    (adsbygoogle = window.adsbygoogle || []).push({});
+                    </script>
+                </div>
+
+
+                <script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+                <ins class="adsbygoogle"
+                     style="display:inline-block;width:468px;height:60px"
+                     data-ad-client="ca-pub-5190112921202137"
+                     data-ad-slot="4411340201"></ins>
+                <script>
+                (adsbygoogle = window.adsbygoogle || []).push({});
+                </script>
+
+                <script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+                <ins class="adsbygoogle"
+                     style="display:inline-block;width:320px;height:50px;float:right"
+                     data-ad-client="ca-pub-5190112921202137"
+                     data-ad-slot="7364806602"></ins>
+                <script>
+                (adsbygoogle = window.adsbygoogle || []).push({});
+                </script>
+                -->
+            </div>
+        </div>
+    </div>
+</div><br>
+<div class="tabcontent">
+    <section id="home">
+        <a name="home"></a>
+        <div class="container-fluid" style="background-color: #f9f9f9">
+            <div class="row-fluid">
+                <div class="span10 offset1" style="margin-top: 100px">
+                    <div class="well sidebar-nav">
+                        <h2>LinkedIn Network Visualization and Analysis</h2>
+                        <hr/>
+                        <div class="row-fluid">
+                        <script type="IN/Login">
+                                <div id="connectionstest">
+                                            <div style='border-radius: 10px;-moz-border-radius: 10px;-webkit-border-radius: 10px;padding:10px;border:1px solid gray;background: #00CCFF;'>
+                                            Hello, <?js= firstName ?> <?js= lastName ?>. Here is your network visualization and report. (<b>Scroll down for the metrics and data</b>!)
+                                            </div>
+                                            <div id="connectionsdata"></div>
+                                </div>
+                        </script>
+                        <div id="Instructions">
+                            <br><h4>This site allows users to visualize and analyze their LinkedIn network using methods derived from social-scientific research. Full sample output is shown <a href="http://imgur.com/ozRj0fX">here</a>. The site is free and open-source. Have fun!</h4>
+                            <br>
+                            <div id="carousel" class="row" style="margin-left: auto; margin-right: auto; width: 90%; display:none;">
+                            <div class="span10 offset1">
+                                  <div id="myCarousel" class="carousel slide">
+                                    <div class="carousel-inner">
+                                      <div class="item active">
+                                        <img src="./img/explore.jpg" alt="">
+                                        <div class="carousel-caption">
+                                          <h4>Explore Your Connections</h4>
+                                          <p>Click a node to highlight their connections to other people you know. Scroll to zoom in/out on particular clusters. Look for long distance connections - they might yield a 'small world' moment.</p>
+                                        </div>
+                                      </div>
+                                      <div class="item">
+                                        <img src="./img/catchup.jpg" alt="">
+                                        <div class="carousel-caption">
+                                          <h4>Catch Up</h4>
+                                          <p>Click a node to write them a message directly from the app. The bar at the bottom of the page will show the contact's profile photo, name, and current position. Click their name to go to their full profile.</p>
+                                        </div>
+                                      </div>
+                                      <div class="item">
+                                        <img src="./img/metrics.jpg" alt="">
+                                        <div class="carousel-caption">
+                                          <h4>Analyze Your Network</h4>
+                                          <p>Calculate metrics from social scientific research on social networks and compare the structure of your network to other users of the site.</p>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <a class="left carousel-control" href="#myCarousel" data-slide="prev">&lsaquo;</a>
+                                    <a class="right carousel-control" href="#myCarousel" data-slide="next">&rsaquo;</a>
+                                  </div>
+                            </div>
+                        </div>
+                            <h4>Instructions:</h4>
+                            <ol>
+                                <li tyle="margin-top: 10px">
+                                    <div style='border-radius: 10px;-moz-border-radius: 10px;-webkit-border-radius: 10px;padding:10px;border:1px solid gray;background: #00CCFF;'>
+                                    <strong>Sign in via LinkedIn</strong> (by clicking the above button). If you do not see the button, you probably have your ad-blocker set to block social media plugins.
+                                    </div>
+                                </li>
+                                <li style="margin-top: 10px">
+                                    Like the now retired inMaps feature, our site allows you to view a diagram of your LinkedIn network. Please wait while the <b>visualization</b> and <b>network metrics</b> are produced. When finished, scroll down to view your network map and analysis.
+                                </li>
+                                <li style="margin-top: 10px">
+                                    At the bottom of the page, there will be a number of <b>network measures</b> drawn from sociological research on professional networks, as well as <b>percentile bars</b> comparing your aggregate network measures to past users.
+                                </li>
+                                <li style="margin-top: 10px">
+                                    Below each measure will be a brief <b>interpretation</b>.
+                                </li>
+                                <li style="margin-top: 10px" name="privacy">
+                                    <b>Privacy</b>: The program uses client-side javascript to perform the calculations, so your network is processed locally on your own machine. We do not store any demographic information your contacts, or your network structure besides the aggregate statistics used in the percentile bars.
+                                </li>
+                                <li style="margin-top: 10px">
+                                    This software is released under the <b>GNU</b> General Public License v2.
+                                </li>
+                                <li style="margin-top: 10px">
+                                    We provide a <b>messaging</b> feature that allows you to type and send a LinkedIn message to the selected contact within the application. This functionality requires that we request messaging permissions. We will never send messages on behalf of users without their express authorization.
+                                </li>
+                                <li style="margin-top: 10px">
+                                    Due to <b>LinkedIn API throttles</b>, we are limited in the number of contacts we can display in a day. We are able to display up to 450 to 500 contacts per user per day, where the precise limit depends on how densely connected your contacts are. Those with more than 500 contacts will see that the application draws contacts up to the limit in alphabetical order. To avoid hitting this cap, please do not refresh the page. LinkedIn also caps the number of contact calls our application can perform in a day at <b>100k</b>. This means that if more than 200 users with 500 contacts log in, the site will no longer be able to render contacts until the following day. This limit resets each day at 12am UTC time, so you can always try again tomorrow. Unfortunately, there is no workaround for this until we are able to get an official partnership with LinkedIn. Thanks for your understanding!
+                                </li>
+                                <li style="margin-top: 10px">
+                                    If you find this page useful, please share with your friends.
+                                </li>
+                            </ol>
+                            <strong>Compatibility:</strong> This program works best with desktop browsers running Javascript (Chrome, Firefox, Safari).
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="msgbar" class="message-bar">&nbsp;</div>
+            <div class="row-fluid">
+                <div class="span10 offset1">
+                    <div class="well sidebar-nav">
+                        <h4>Network Visualization</h4>
+                        <hr/>
+                        <ul>
+                            <li>
+                                <strong style="display: inline-block;width:150px">Coloring:</strong>
+                                <input type="radio" name="radio1" value="name" id="radioName"><label for="radioName" style="display: inline-block">&nbsp;By
+                                name</label>&nbsp;&nbsp;&nbsp;
+                                <input type="radio" name="radio1" value="industry" id="radioIndustry" checked="true"><label
+                                    for="radioIndustry" style="display: inline-block">&nbsp;By industry</label>
+                                <input type="radio" name="radio1" value="countryCode" id="radioCountry"><label
+                                    for="radioCountry" style="display: inline-block">&nbsp;By country</label>
+                                <input type="radio" name="radio1" value="location" id="radioLocation"><label
+                                    for="radioLocation" style="display: inline-block">&nbsp;By location</label>
+                            </li>
+                            <li>
+                                <strong style="display: inline-block;width:150px">Connections to self:</strong>
+                                <input type="radio" name="radio2" value="self" id="connSelf" checked="true"><label
+                                    for="connSelf" style="display: inline-block">&nbsp;Enable</label>&nbsp;&nbsp;&nbsp;&nbsp;
+                                <input type="radio" name="radio2" value="no-self" id="connNotSelf" checked="false"><label
+                                    for="connNotSelf" style="display: inline-block">&nbsp;Disable</label>
+                            </li>
+                            <li>
+                                <strong style="display: inline-block;width:150px">Names:</strong>
+                                <input type="radio" name="radio3" value="show" id="showName" checked="true"><label
+                                    for="radioShow" style="display: inline-block">&nbsp;Show</label>&nbsp;&nbsp;&nbsp;&nbsp;
+                                <input type="radio" name="radio3" value="noname" id="noName"><label
+                                    for="radioNo" style="display: inline-block">&nbsp;Hide (better for sharing)</label>
+                            </li>
+                        </ul>
+                            <span id="message"></span>
+
+                        <div id="d3_viewport">&nbsp;</div>
+                        <b>Protips</b>: Pay special attention to the <b>bridges</b> between network clusters, as they are the most likely to be surprises (e.g. a high school friend who knows a co-worker of yours, a 'small world' effect), or particularly influential (an alumni of your school that introduced you to your current employer). Also, <b>click nodes</b> to highlight your mutual connections.<br>
+                        <b>Note</b>: LinkedIn's API limits us to <b>500 contact calls</b> per user per day, and <b>100k</b> contact calls total. If we've exceeded the limit, you will see an entirely disconnected network diagram. This is due to the fact that we do not store your network data, and run the query against LinkedIn's API each time you visit the page. This limit resets each day at 12am UTC time, so you may try again tomorrow. To avoid hitting this cap, please do not refresh the page, and try to limit visits to once per day. Thanks for your understanding!
+                    </div>
+                </div>
+            </div>
+        <a name="metrics"></a>
+             <div class="row-fluid" id="percentiles" style="display: none">
+                <div class="span10 offset1">
+                    <div class="well sidebar-nav">
+                        <h4>Your Network Metrics:</h4>
+                        <hr/>
+                        Below is a list of measures for your egocentric network. The bar represents your percentile compared to other users. The <b>percentiles are more informative than the raw values</b>. Given that online networks are much larger and more disperse than those reported in network surveys, the raw values appear to be very low, as these measures were initially calibrated for smaller networks. The computed value is displayed under the bar with a brief interpretation. <b><b>Note</b>: This tool is primarily for entertainment and educational purposes. We know that LinkedIn networks are only a subset of people's actual contacts, and that these links might not be as informative as other types of network data, so any inferences should be discounted appropriately.<br><br>
+                        <ul>
+                            <li id="p_asize"><strong>Absolute Size:</strong> <span>20%</span>
+                                <div class="progress progress-info progress-striped">
+                                    <div class="bar" style="width: 20%"></div>
+                                </div>
+                            <div id="asize_output"></div>
+                            </li>
+                            <li id="p_esize"><strong>Effective Size:</strong> <span>20%</span>
+                                <div class="progress progress-info progress-striped">
+                                    <div class="bar" style="width: 20%"></div>
+                                </div>
+                            <div id="esize_output"></div>
+                            </li>
+                            <li id="p_constraint"><strong>Network Constraint:</strong> <span>20%</span>
+                                <div class="progress progress-info progress-striped">
+                                    <div class="bar" style="width: 20%"></div>
+                                </div>
+                            <div id="constraint_output"></div>
+                            </li>
+                            <li id="p_density"><strong>Density:</strong> <span>20%</span>
+                                <div class="progress progress-info progress-striped">
+                                    <div class="bar" style="width: 20%"></div>
+                                </div>
+                            <div id="density_output"></div>
+                            </li>
+                            <li id="p_hierarchy"><strong>Hierarchy:</strong> <span>20%</span>
+                                <div class="progress progress-info progress-striped">
+                                    <div class="bar" style="width: 20%"></div>
+                                </div>
+                            <div id="hierarchy_output"></div>
+                            </li>
+                            <li id="p_betweenness"><strong>Betweenness:</strong> <span>20%</span>
+                                <div class="progress progress-info progress-striped">
+                                    <div class="bar" style="width: 20%"></div>
+                                </div>
+                            <div id="betweenness_output"></div>
+                            </li>
+                        </ul>
+                        <hr/>
+                        <hr/>
+                        </div>
+                </div>
+            </div>
+
+<!--<div align="center">
+<script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<ins class="adsbygoogle"
+     style="display:inline-block;width:728px;height:90px"
+     data-ad-client="ca-pub-5190112921202137"
+     data-ad-slot="8437913808"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>!-->
+        </div>
+            </div>
+    </section>
+
+    <section id="about">
+    <div class="container-fluid" style="background-color: #f9f9f9">
+    <a name="about"></a>
+        <div class="row-fluid">
+            <div class="span10 offset1" style="margin-top: 100px">
+                <div class="well sidebar-nav">
+
+                    <h4>About the Project</h4>
+                    <hr/>
+                    This project is open source, and intended for personal or academic use. The idea is to educate people about their social network data and to make analysis more accessible for everday users. It has been used at over 20 universities across the world to teach students about the power of social network analysis as part of undergraduate and MBA curricula. You can <a href="mailto:socilab@gmail.com">email</a> me with your use cases, feedback, and ideas.<br><br>
+                    You can find the javascript code for the project on github. Here are the .js files for the <a href="https://github.com/craigtutterow/sna-js/blob/master/linkedin/d3js-linkedin.js"><b>visualization</b></a> and <a href="https://github.com/craigtutterow/sna-js"><b>network analysis calculations</b></a>. Please fork and contribute if you're interested in developing this project further!<br><br>
+                    <!--This site runs on Amazon Web Services. Any donations towards defraying server expenses (currently <font color="00CC00"><b>~$15/month</b></font>) and supporting future development would be much appreciated! :)<br><br>
+                <center>
+                <table style="border:0;">
+                <tr style="border:0;">
+                <td style="border:0;">
+                <form action="https://www.paypal.com/cgi-bin/webscr" method="post" target="_top">
+                <input type="hidden" name="cmd" value="_s-xclick">
+                <input type="hidden" name="hosted_button_id" value="2T9VWDY8MP5QU">
+                <input type="image" src="https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif" border="0" name="submit" alt="PayPal - The safer, easier way to pay online!">
+                <img alt="" border="0" src="https://www.paypalobjects.com/en_US/i/scr/pixel.gif" width="1" height="1">
+                </form>&nbsp;
+                </td>
+                </tr>
+                </table>
+                </center>
+                -->
+                   </div>
+                </div>
+            </div>
+        <div class="row-fluid">
+            <div class="span10 offset1">
+                <div class="well sidebar-nav">
+                    <h4>About Me</h4>
+                    <hr/>
+                    My name is Craig Tutterow<a href="https://plus.google.com/+CraigTutterow/?rel=author"></a> (<a href="http://home.uchicago.edu/~craigtutterow/index.html">web C.V.</a>). I recently graduated from the University of Chicago, Booth School of Business with a PhD in Organizations & Markets. I am currently a postdoctoral researcher at Google's PiLab, where I work on applied social network research using personnel data.<br>
+                    <!--<strong>Email:</strong> ___
+                    <div>
+                        <a href="http://www.linkedin.com/company/Socilab-llc" target="_blank"><img
+                                src="/images/c_linkedin.png" alt="linkedin"/></a>
+                        <a href="https://www.facebook.com/Socilab.me" target="_blank"><img src="/images/facebook.png"
+                                                                                         alt="Facebook"/></a>
+                        <a href="http://twitter.com/Socilabdotme" target="_blank"><img src="/images/twitter.png"
+                                                                                     alt="Twitter"/></a>
+                   -->
+                </div>
+            </div>
+        </div>
+<!--<div align="center">
+<script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<ins class="adsbygoogle"
+     style="display:inline-block;width:728px;height:90px"
+     data-ad-client="ca-pub-5190112921202137"
+     data-ad-slot="8437913808"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>!-->
+    </div>
+
+    </section>
+
+    <section id="resources">
+    <div class="container-fluid" style="background-color: #f9f9f9">
+    <a name="resources"></a>
+        <div class="row-fluid">
+            <div class="span10 offset1" style="margin-top: 100px">
+                <div class="well sidebar-nav">
+                <table id="hor-zebra">
+                    <thead>
+                        <tr>
+                            <th scope="col"><h4>General Resources</h4></th>
+                            <th scope="col"><h4>Network Analysis Software</h4></th>
+                            <th scope="col"><h4>Data Visualization on Web</h4></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><a href="http://www.cs.cornell.edu/home/kleinber/networks-book/">Networks, Crowds and Markets: Reasoning About a Highly Connected World</a>, David Easley and Jon Kleinberg 2010 (free!)</td>
+                            <td><a href="https://sites.google.com/site/ucinetsoftware/home">UCINet</a>, standalone analysis and visualization software with GUI - easiest way in to network analysis, but only free for a month</td>
+                            <td><a href="http://d3js.org/">D3.js</a>, a fantastic data visualization archive for web applications</td>
+                        </tr>
+                        <tr>
+                            <td><a href="http://faculty.ucr.edu/~hanneman/nettext/">Introduction to social network methods</a>, Robert Hanneman & Mark Riddle; Accessible introduction to SNA</td>
+                            <td><a href="http://cran.r-project.org/web/packages/sna/index.html">SNA</a>, R Package by Carter Butts, useful for visualization and statistical analysis of network data</td>
+                            <td><a href="http://www.reddit.com/r/dataisbeautiful">dataisbeautiful subreddit</a>, some interesting stuff</td>
+                        </tr>
+                        <tr>
+                            <td><a href="http://www.analytictech.com/networks/topics.htm">Social Network Analysis Instructional Web Site</a>, Steve Borgatti
+                            </td>
+                            <td><a href="http://cran.r-project.org/web/packages/network/index.html">Network</a>, R Package by Carter Butts, useful for manipulating network data</td>
+                            <td><a href="http://www-958.ibm.com/software/analytics/manyeyes/page/Visualization_Options.html">Many Eyes (IBM)</a>, very flexible visualization platform for multiple types of data</td>
+                        </tr>
+                        <tr>
+                            <td><a href="http://www.insna.org/socnet.html">Social Network Analysis Listserv</a></td>
+                            <td><a href="http://networkx.github.io/">NetworkX</a>, Python package</td>
+                            <td><a href="https://books.google.com/ngrams">Google NGrams</a>, see the relative usage of words in Google Books corpus over time</td>
+                        </tr>
+                        <tr>
+                            <td><a href="http://www.stanford.edu/~messing/RforSNA.html">R Tutorial for SNA</a>, Solomon Messing</td>
+                            <td><a href="http://igraph.sourceforge.net/">igraph</a>, Python and R package</td>
+                            <td><a href="http://www.bewitched.com/">Martin Wattenberg</a></td>
+                        </tr>
+                        <tr>
+                            <td><a href="http://faculty.chicagobooth.edu/ronald.burt/teaching/">Strategic Leadership Teaching Slides</a>, Ron Burt</td>
+                            <td><a href="https://gephi.org/">gephi</a>, standalone network visualization software</td>
+                            <td><a href="http://www.edwardtufte.com/bboard/q-and-a?topic_id=1">Edward Tufte</a>'s message board</td>
+                        </tr>
+                        <tr>
+                            <td><a href="http://www.robcross.org/network_tutorials.htm">Applied/Hands on Tutorial using UCINet</a> for business students, Rob Cross</td>
+                            <td><a href="http://vlado.fmf.uni-lj.si/pub/networks/pajek/">pajek</a>, standalone network visualization software</td>
+                            <td><a href="http://thinktostart.wordpress.com">Julian Hillebrand Blog on Social Media, Technology and Analytics</a> (includes some nice API tutorials)</td>
+                        </tr>
+                        <tr>
+                            <td><a href="http://www.reddit.com/r/sna/">SNA subreddit</a></td>
+                            <td> </td>
+                            <td> </td>
+                        </tr>
+                        <tr>
+                            <td><a href="https://sites.google.com/site/businesssna/network-reseach-centers">Curated Index of SNA Research Centers, Businesses, Courses, and Papers</a></td>
+                            <td> </td>
+                            <td> </td>
+                        </tr>
+                        <tr>
+                            <td><a href="http://www.analytictech.com/networks/history.htm">History of SNA</a></td>
+                            <td> </td>
+                            <td> </td>
+                        </tr>
+
+                    </tbody>
+                </table>
+                </div>
+            </div>
+        </div>
+        <!--<div class="row-fluid">
+            <div class="span4 offset4" style="text-align: center">
+                <p>
+                    Due to constrained throttle limits of linkedin api we cache your processed network graph in your browser's local storage such that if you revisit or refresh this page then we don't need to get all the data again from Linkedin's api. Use button below to clear it to force reload data from the api.
+                </p>
+                <p class="navbar-text pull-right"><button onclick="localStorage.clear()">Clear Local Cache</button></p>
+            </div>
+        </div>-->
+<!--<div align="center">
+<script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<ins class="adsbygoogle"
+     style="display:inline-block;width:728px;height:90px"
+     data-ad-client="ca-pub-5190112921202137"
+     data-ad-slot="8437913808"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>!-->
+    </div>
+    </section>
+
+    <section id="books">
+    <div class="container-fluid" style="background-color: #f9f9f9">
+    <a name="books"></a>
+        <div class="row-fluid">
+                <div class="well sidebar-nav" style="margin-top: 100px">
+                <table align="center"><tr>
+                <td>
+                <SCRIPT charset="utf-8" type="text/javascript" src="http://ws-na.amazon-adsystem.com/widgets/q?ServiceVersion=20070822&MarketPlace=US&ID=V20070822%2FUS%2Fsocilabcom05-20%2F8001%2F7fffda3a-2910-40fb-9914-b3fa3ee805a9"> </SCRIPT> <NOSCRIPT><A HREF="http://ws-na.amazon-adsystem.com/widgets/q?ServiceVersion=20070822&MarketPlace=US&ID=V20070822%2FUS%2Fsocilabcom05-20%2F8001%2F7fffda3a-2910-40fb-9914-b3fa3ee805a9&Operation=NoScript">Amazon.com Widgets</A></NOSCRIPT>
+                </td>
+                <td>
+                <SCRIPT charset="utf-8" type="text/javascript" src="http://ws-na.amazon-adsystem.com/widgets/q?ServiceVersion=20070822&MarketPlace=US&ID=V20070822%2FUS%2Fsocilabcom05-20%2F8001%2Fac38867e-1c39-419a-8d5c-9c0bf65159d9"> </SCRIPT> <NOSCRIPT><A HREF="http://ws-na.amazon-adsystem.com/widgets/q?ServiceVersion=20070822&MarketPlace=US&ID=V20070822%2FUS%2Fsocilabcom05-20%2F8001%2Fac38867e-1c39-419a-8d5c-9c0bf65159d9&Operation=NoScript">Amazon.com Widgets</A></NOSCRIPT>
+                </td>
+                <td>
+                <SCRIPT charset="utf-8" type="text/javascript" src="http://ws-na.amazon-adsystem.com/widgets/q?ServiceVersion=20070822&MarketPlace=US&ID=V20070822%2FUS%2Fsocilabcom05-20%2F8001%2Fc7c04c4a-d1fe-4692-af98-f26fcce362ff"> </SCRIPT> <NOSCRIPT><A HREF="http://ws-na.amazon-adsystem.com/widgets/q?ServiceVersion=20070822&MarketPlace=US&ID=V20070822%2FUS%2Fsocilabcom05-20%2F8001%2Fc7c04c4a-d1fe-4692-af98-f26fcce362ff&Operation=NoScript">Amazon.com Widgets</A></NOSCRIPT>
+                </td>
+                </tr></table>
+                </div>
+        </div>
+    </div>
+    </section>
+
+</div>
+    <div id="fb-root"></div>
+    <script>(function(d, s, id) {
+      var js, fjs = d.getElementsByTagName(s)[0];
+      if (d.getElementById(id)) return;
+      js = d.createElement(s); js.id = id;
+      js.src = "//connect.facebook.net/en_US/sdk.js#xfbml=1&version=v2.0";
+      fjs.parentNode.insertBefore(js, fjs);
+    }(document, 'script', 'facebook-jssdk'));
+    </script>
+    <script src="https://apis.google.com/js/platform.js" async defer></script>
+<footer>
+    <div class="navbar" style="margin-bottom: 0">
+        <div class="navbar-inner">
+            <div class="container-fluid" style="display:inline;">
+                <div class="nav-collapse collapse">
+                    <table style="border:0; display:inline;">
+                    <tr style="border:0;">
+                    <td style="border:0;">
+                    <div style="float: left; margin-left:4px; display: inline;">
+                        <script type="IN/Share" data-url="http://socilab.com" data-counter="right">
+                        </script>&nbsp;
+                    </div>
+                    </td>
+                    <td style="border:0;">
+                    <div class="fb-like" data-href="https://www.facebook.com/socilabdotcom" data-layout="button_count" data-action="like" data-show-faces="false" data-share="true"></div>
+                    &nbsp;
+                    </td>
+                    <td style="border:0;">
+                    <div style="float: left; display: inline;">
+                        <a href="https://twitter.com/share" class="twitter-share-button" data-url="http://socilab.com" data-text="Check out socilab - a site to visualize and analyze your LinkedIn network :) #dataviz #inmaps" data-via="socilabdotcom">Tweet</a>
+                        <a href="https://twitter.com/socilabdotcom" class="twitter-follow-button" data-show-count="false">Follow @socilabdotcom</a>&nbsp;
+                    <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src='http://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+                    </div>
+                    </td>
+                    <!--<g:plus action="share"></g:plus>-->
+                    <td style="border:0;">
+                    <iframe src="http://ghbtns.com/github-btn.html?user=craigtutterow&repo=sna-js&type=watch&count=true" allowtransparency="true" frameborder="0" scrolling="0" width="110" height="20"></iframe>
+                    </td>
+                    <td style="border:0;">
+                    <div class="g-plusone" data-size="medium" data-annotation="inline" data-width="120"></div>
+                    </td>
+                    <td style="border:0;">
+                        <button onclick="localStorage.clear()">Clear Local Cache</button>
+                    </td>
+                    <!---<div style="float: left; display: inline;">
+                        <script type="text/javascript" src="http://www.reddit.com/static/button/button1.js"></script>
+                    </div>!-->
+                    </tr></table>
+
+                    <!--<div class="fb-share-button" data-href="http://socilab.com" data-type="button_count"></div>
+                    <script type="IN/Share" data-url="http://socilab.com" data-counter="top">
+                    </script>
+                    <g:plus action="share"></g:plus>
+                    <iframe src="http://ghbtns.com/github-btn.html?user=markdotto&repo=github-buttons&type=watch&count=true"
+                    allowtransparency="true" frameborder="0" scrolling="0" width="110" height="20"></iframe>
+                    -->
+                    <p class="navbar-text pull-right" style="display:inline;">
+                        <a href="//www.iubenda.com/privacy-policy/822841" class="iubenda-white iubenda-embed" title="Privacy Policy">Privacy Policy</a><script type="text/javascript">(function (w,d) {var loader = function () {var s = d.createElement("script"), tag = d.getElementsByTagName("script")[0]; s.src = "//cdn.iubenda.com/iubenda.js"; tag.parentNode.insertBefore(s,tag);}; if(w.addEventListener){w.addEventListener("load", loader, false);}else if(w.attachEvent){w.attachEvent("onload", loader);}else{w.onload = loader;}})(window, document);</script>
+                        &copy; Socilab - 2013-2015
+                    </p>
+                </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</footer>
+<script src="/tool_files/sna-js.js" charset="utf-8"></script>
+<script src="/tool_files/d3js-linkedin.js" charset="utf-8"></script>
+<div class="loader loader_flush">&nbsp;</div>
+<div class="loader loader_content">
+    <table style="height: 100%;width: 100%;border: 0;padding: 0;border-spacing: 0;margin: 0;" >
+        <tr>
+            <td style="color: #ffffff;text-align: center;vertical-align: middle">
+                <span style="padding: 15px;background: rgba(0,0,0,0.7);border-radius: 10px;-moz-border-radius: 10px;-webkit-border-radius: 10px;display: inline-block">
+                    <h4 style="color: yellow;text-align: center">Analyzing Your Network</h4>
+                    <h5 style="text-align: center">Please Wait...</h5>
+                    <h5 style="text-align: center">Please do not refresh the page, as this may exhaust your LinkedIn API calls for the day.</h5>
+                    <h5 style="text-align: center">(The API limit is reset every day at 12am UTC.)</h5>
+                    <img src="/images/loading_black_new.gif" alt="..."/>
+                </span>
+            </td>
+        </tr>
+    </table></div>
+<script type="text/javascript">
+    $(".loader").hide();
+    window.loader = {
+        show: function(){
+            $(".loader").show();
+        },
+        hide: function(){
+            $(".loader").hide();
+        }
+    };
+</script>
+<script type="text/javascript">
+      if (document.location.hash == "" || document.location.hash == "#")
+        document.location.hash = "#home";
+</script>
+<script type="text/javascript" src=//userlike-cdn-widgets.s3-eu-west-1.amazonaws.com/c2a7c3a4d921acc3897fd48400054284666ad583fa089cc2bd5034c941695591.js></script>
+</body>
+</html>
