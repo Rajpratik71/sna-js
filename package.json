@@ -1,0 +1,9 @@
+{
+  "name": "sna-js",
+  "version": "0.0.0",
+  "description": "Visualize and calculate relevant metrics for egocentric social network analysis, using a 2d adjacency matrix drawing on the LinkedIn API as input.",
+  "repository": "git@github.com:craigtutterow/sna-js.git",
+  "author": "Craig Tutterow",
+  "license": "MIT",
+  "private": true
+}
