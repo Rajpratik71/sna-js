@@ -1,5 +1,8 @@
+[![Build Status](https://travis-ci.com/wesrice/sna-js.svg?branch=master)](https://travis-ci.com/wesrice/sna-js)
+
 sna-js
 ======
+
 
 This repository contains javascript code that interact with social network APIs, generate D3.js visualizations, and calculate relevant metrics for **social network analysis**. 
 

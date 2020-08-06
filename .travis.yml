@@ -1,0 +1,17 @@
+language: node_js
+node_js: "lts/carbon"
+
+env:
+  - NODE_ENV=development
+
+after_success:
+  - yarn build
+
+deploy:
+  github-token: $GITHUB_TOKEN
+  keep-history: true
+  local-dir: dist
+  # on:
+  #   branch: master
+  provider: pages
+  skip-cleanup: true

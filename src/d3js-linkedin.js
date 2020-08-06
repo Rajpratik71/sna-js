@@ -1,5 +1,6 @@
 /*D3.js code to visualize a user's LinkedIn network from 2d array. Adjacency matrix of user's contacts
 is received after being parsed from LinkedIn API.*/
+
 function visualizeConnections(data, enableConnectionsToSelf, colorization) {
     var matrix = enableConnectionsToSelf ? data.matrix : data.reducedMatrix;
     var connections = data.publicConnections;
@@ -130,3 +131,7 @@ function visualizeConnections(data, enableConnectionsToSelf, colorization) {
         });
     }   */
 }
+
+module.exports = {
+  visualizeConnections
+};
